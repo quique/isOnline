@@ -4,6 +4,11 @@ isOnline
 Script for scheduled check of websites availability and mail report. Suited for crontab job.
 
 ## Requisites
+You should have curl installed.  On Debian-based system you can use something like:
+```
+sudo apt-get install curl
+```
+
 You must install and configure a SMTP server or use a remote one.
 
 For example, use *heirloom-mailx*:
@@ -25,7 +30,6 @@ set from="$FROM_EMAIL_ADDRESS($FRIENDLY_NAME)"
 1. Create ```emails.lst``` file and fill it with each email in new line (as in ```emails.lst.example```). leave an empty line in the end.
 2. Create ```websites.lst``` file and fill it with each website in a new line (as in ```websites.lst.example```). leave an empty line in the end.
 
-    Note that the script will approve http response 200 only. url(s) with 301 (redirect) will fail.
     Note that the websites must include the used protocol (*http://*, for example).
 
 ## Add to crontab
