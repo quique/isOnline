@@ -16,34 +16,34 @@ TEMPDIR=$WORKSPACE/cache
 if [ -n "$THIS_IS_CRON" ]; then QUIET=true; else QUIET=false; fi
 
 function test {
-  response=$(curl --write-out %{http_code} --silent --output /dev/null $1)
-  #filename=$( echo $1 | cut -f1 -d"/" )
-  filename=$( echo $1 | tr / _ )
-  if [ "$QUIET" = false ] ; then echo -n "$p "; fi
+    response=$(curl --write-out %{http_code} --silent --output /dev/null $1)
+    #filename=$( echo $1 | cut -f1 -d"/" )
+    filename=$( echo $1 | tr / _ )
+    if [ "$QUIET" = false ] ; then echo -n "$p "; fi
 
-  if [ $response -eq 200 ] ; then
-    # website working
-    if [ "$QUIET" = false ] ; then
-      echo -n "$response "; echo -e "\e[32m[ok]\e[0m"
+    if [ $response -eq 200 ] ; then
+        # website working
+        if [ "$QUIET" = false ] ; then
+            echo -n "$response "; echo -e "\e[32m[ok]\e[0m"
+        fi
+        # remove .temp file if exist 
+        if [ -f $TEMPDIR/$filename ]; then rm -f $TEMPDIR/$filename; fi
+    else
+        # website down
+        if [ "$QUIET" = false ] ; then echo -n "$response "; echo -e "\e[31m[DOWN]\e[0m"; fi
+        if [ ! -f $TEMPDIR/$filename ]; then
+            while read e; do
+                # using mailx command
+                echo "$p WEBSITE DOWN" | mailx -s "$1 WEBSITE DOWN ( $response )" $e
+                # using mail command
+                #mail -s "$p WEBSITE DOWN" "$EMAIL"
+            done < $EMAILLISTFILE
+            echo > $TEMPDIR/$filename
+        fi
     fi
-    # remove .temp file if exist 
-    if [ -f $TEMPDIR/$filename ]; then rm -f $TEMPDIR/$filename; fi
-  else
-    # website down
-    if [ "$QUIET" = false ] ; then echo -n "$response "; echo -e "\e[31m[DOWN]\e[0m"; fi
-    if [ ! -f $TEMPDIR/$filename ]; then
-        while read e; do
-            # using mailx command
-            echo "$p WEBSITE DOWN" | mailx -s "$1 WEBSITE DOWN ( $response )" $e
-            # using mail command
-            #mail -s "$p WEBSITE DOWN" "$EMAIL"
-        done < $EMAILLISTFILE
-        echo > $TEMPDIR/$filename
-    fi
-  fi
 }
 
 # main loop
 while read p; do
-  test $p
+    test $p
 done < $LISTFILE
