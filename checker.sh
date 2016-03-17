@@ -1,7 +1,8 @@
 #!/bin/bash
 # Website status checker. by ET (etcs.me)
 
-WORKSPACE=/scripts/isOnline
+#WORKSPACE=/scripts/isOnline
+WORKSPACE=.
 # list of websites. each website in new line. leave an empty line in the end.
 LISTFILE=$WORKSPACE/websites.lst
 # Send mail in case of failure to. leave an empty line in the end.
@@ -16,7 +17,8 @@ if [ -n "$THIS_IS_CRON" ]; then QUIET=true; else QUIET=false; fi
 
 function test {
   response=$(curl --write-out %{http_code} --silent --output /dev/null $1)
-  filename=$( echo $1 | cut -f1 -d"/" )
+  #filename=$( echo $1 | cut -f1 -d"/" )
+  filename=$( echo $1 | tr / _ )
   if [ "$QUIET" = false ] ; then echo -n "$p "; fi
 
   if [ $response -eq 200 ] ; then
