@@ -3,13 +3,15 @@
 
 #WORKSPACE=/scripts/isOnline
 WORKSPACE=`dirname "$(readlink -f "$0")"`
-# list of websites. each website in new line. Leave an empty line in the end.
+# List of websites.  Each website in new line.
 LISTFILE=$WORKSPACE/websites.lst
-# Send mail in case of failure to. Leave an empty line in the end.
+# Addresses to send mail in case of failure, one per line.
 EMAILLISTFILE=$WORKSPACE/emails.lst
-# Temporary dir
-TEMPDIR=$WORKSPACE/cache
+# Temporary dirs
+WARNINGS=$WORKSPACE/warnings
+ERRORS=$WORKSPACE/errors
 # Word to watch, known to be included in the page.
+# It is not required to be visible, it can be in a HTML comment.
 CANARY=Directorio
 
 # `Quiet` is true when in crontab; show output when it's run manually from shell.
@@ -22,32 +24,31 @@ function test {
     #filename=$( echo $1 | cut -f1 -d"/" )
     response=$(curl --silent -L $1)
     filename=$( echo $1 | tr / _ )
-    if [ "$QUIET" = false ] ; then echo -n "$p "; fi
+    if [ "$QUIET" = false ]; then echo -n "$p "; fi
 
     #if [ $response -eq 200 ] ; then
     if echo $response | grep $CANARY > /dev/null; then
         # website working
-        if [ "$QUIET" = false ] ; then
-            echo -e "\e[32m[ok]\e[0m"
-        fi
-        # Remove temporary file if it exists.
-        if [ -f $TEMPDIR/$filename ]; then rm -f $TEMPDIR/$filename; fi
+        if [ "$QUIET" = false ]; then echo -e "\e[32m[ok]\e[0m"; fi
+        # Remove temporary files if they exist.
+        if [ -f $WARNINGS/$filename ]; then rm -f $WARNINGS/$filename; fi
+        if [ -f $ERRORS/$filename ]; then rm -f $ERRORS/$filename; fi
     else
         # website down
-        if [ ! -f $TEMPDIR/$filename ]; then
+        if [ ! -f $WARNINGS/$filename ]; then
             # Down for the first time.  Just show a warning.
-            if [ "$QUIET" = false ] ; then echo -e "\e[33m[down]\e[0m"; fi
-            echo > $TEMPDIR/$filename
+            if [ "$QUIET" = false ]; then echo -e "\e[33m[down]\e[0m"; fi
+            echo > $WARNINGS/$filename
         else
-            # It keeps being down. Show an error and send mail.
-            if [ "$QUIET" = false ] ; then echo -e "\e[31m[DOWN]\e[0m"; fi
-            while read e; do
-                : # Uncomment one of the mail commands to be notified via email
-                # using mailx command
-                #echo "$p WEBSITE DOWN" | mailx -s "$1 WEBSITE DOWN ( $response )" $e
-                # using mail command
-                #mail -s "$p WEBSITE DOWN" "$EMAIL"
-            done < $EMAILLISTFILE
+            # It keeps being down. Show an error.
+            if [ "$QUIET" = false ]; then echo -e "\e[31m[DOWN]\e[0m"; fi
+            if [ ! -f $ERRORS/$filename ]; then
+                # 2nd time down.  Send e-mail.
+                while read e; do
+                    echo "$p WEBSITE DOWN" | mailx -s "$1 WEBSITE DOWN" $e
+                done < $EMAILLISTFILE
+                echo > $ERRORS/$filename
+            fi
         fi
     fi
 }
